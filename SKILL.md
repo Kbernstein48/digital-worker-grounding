@@ -1,7 +1,7 @@
 ---
 name: digital-worker-grounding
 description: "Distill business records and documents into a deep, detailed knowledge wiki — topics, business process, Role OS, automation candidates, governance, evaluations — that grounds a Digital Worker. Extracts rich reusable knowledge with case-ID citations; never turns cases into pages."
-version: 2.1.0
+version: 2.2.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -153,3 +153,4 @@ Load these when performing the corresponding work — they are the authoritative
 | `references/process-model.md` | creating or updating business process pages |
 | `references/templates.md` | writing SCHEMA.md, the Role OS, or creating any new page |
 | `references/lint.md` | auditing wiki health, noise, or shallow extraction |
+| `references/parallel-ingest.md` | corpus is too large for single-agent chunked ingest and you accept the added coordination discipline — Hard Rule 9's single-agent default still applies otherwise |

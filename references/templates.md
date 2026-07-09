@@ -196,6 +196,9 @@ Novelty, ambiguity, out-of-policy, low-confidence handling.
 ## Compile-Down Strategy
 Which parts of the role should become deterministic automation — link [[automation/]] candidates.
 
+## Self-Extension Policy
+How the worker proposes, tests, and governs changes to its own prompts, tools, code, flows, and memory — including how it configures itself for a new domain (e.g. an onboarding interview) and what requires human approval before taking effect.
+
 ## Evaluation Model
 How good work is measured — link [[evaluations/good-work-criteria]].
 
