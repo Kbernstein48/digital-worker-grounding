@@ -52,6 +52,104 @@ rare-but-important: false   # true only for single-case pages passing the import
 
 `exemplars` is a curated shortlist for the whole page; claim-level citations remain in the body. `role-os.md` uses `type: role`. `SCHEMA.md`, `index.md`, and `log.md` are control files and carry no frontmatter.
 
+## SQLite Knowledge Database
+
+Maintain `_meta/knowledge.db` alongside the CSV ledger for machine-readable provenance and review workflows. The database is an index, not a replacement for the markdown wiki or the source system: pages remain the human-facing knowledge base, Salesforce/other source systems remain the record of truth, and the DB makes the evidence inspectable.
+
+Required core tables:
+
+```sql
+CREATE TABLE cases (
+  case_id TEXT PRIMARY KEY,
+  source_ref TEXT,
+  batch_id TEXT,
+  ingested TEXT,
+  status TEXT,
+  case_type TEXT,
+  topic TEXT,
+  process_stage TEXT,
+  root_cause TEXT,
+  resolution_pattern TEXT,
+  actors TEXT,
+  systems TEXT,
+  novel TEXT,
+  pages_updated TEXT,
+  gist TEXT,
+  notes TEXT
+);
+
+CREATE TABLE pages (
+  page_path TEXT PRIMARY KEY,
+  title TEXT,
+  type TEXT,
+  updated TEXT,
+  line_count INTEGER
+);
+
+CREATE TABLE claims (
+  claim_id TEXT PRIMARY KEY,
+  page_path TEXT NOT NULL,
+  heading TEXT,
+  claim_text TEXT NOT NULL,
+  evidence_count INTEGER,
+  exemplar_case_ids TEXT,
+  claim_kind TEXT,
+  FOREIGN KEY(page_path) REFERENCES pages(page_path)
+);
+
+CREATE TABLE claim_cases (
+  claim_id TEXT NOT NULL,
+  case_id TEXT NOT NULL,
+  support_type TEXT DEFAULT 'exemplar',
+  PRIMARY KEY (claim_id, case_id),
+  FOREIGN KEY(claim_id) REFERENCES claims(claim_id),
+  FOREIGN KEY(case_id) REFERENCES cases(case_id)
+);
+
+CREATE TABLE data_points (
+  data_point_id TEXT PRIMARY KEY,
+  case_id TEXT NOT NULL,
+  page_path TEXT,
+  data_type TEXT NOT NULL,
+  normalized_text TEXT NOT NULL,
+  source_field TEXT,
+  source_artifact TEXT,
+  confidence TEXT DEFAULT 'medium',
+  promoted_to_claim_id TEXT,
+  FOREIGN KEY(case_id) REFERENCES cases(case_id),
+  FOREIGN KEY(page_path) REFERENCES pages(page_path),
+  FOREIGN KEY(promoted_to_claim_id) REFERENCES claims(claim_id)
+);
+
+CREATE INDEX idx_data_points_case ON data_points(case_id);
+CREATE INDEX idx_data_points_type ON data_points(data_type);
+CREATE INDEX idx_claims_page ON claims(page_path);
+```
+
+Populate or refresh `_meta/knowledge.db` after every batch checkpoint and after substantial rewrites. At minimum, load every ledger row into `cases`, every durable markdown page into `pages`, every cited claim into `claims`, exemplar links into `claim_cases`, and extracted reusable observations into `data_points` (errors, commands, config keys, versions, decisions, supportability boundaries, evidence gaps). Do not store raw customer narratives or source documents in the DB; `normalized_text` should be sanitized and reusable in the same way wiki claims are.
+
+This pattern is generic for any source business object. The table name `cases` is retained for compatibility with existing wikis, but a row may represent any ingested business record: support case, incident, claim, opportunity, order, invoice, application, transcript, call, document, or other object. Use the human-facing record identifier in `case_id`, describe the source in `source_ref`, and adapt `case_type`, `topic`, `process_stage`, `root_cause`, `resolution_pattern`, `actors`, and `systems` to the domain taxonomy in `SCHEMA.md`. When a corpus does not naturally have "cases", treat `cases` as the canonical `records` table for the wiki.
+
+## Query Tool
+
+Use `scripts/query_knowledge_db.py` to inspect `_meta/knowledge.db` instead of writing ad hoc SQL for routine review. The tool uses generic business-object language (`record`) while reading the compatibility table `cases` underneath.
+
+Examples:
+
+```bash
+python scripts/query_knowledge_db.py --wiki /path/to/wiki counts
+python scripts/query_knowledge_db.py --wiki /path/to/wiki top --by data_type
+python scripts/query_knowledge_db.py --wiki /path/to/wiki search "trustServerCertificate"
+python scripts/query_knowledge_db.py --wiki /path/to/wiki record 02900242
+python scripts/query_knowledge_db.py --wiki /path/to/wiki records --topic upgrade --system "Automation Suite"
+python scripts/query_knowledge_db.py --wiki /path/to/wiki page concepts/sql-database-connectivity.md
+python scripts/query_knowledge_db.py --wiki /path/to/wiki data-points --type error_or_boundary --limit 20
+python scripts/query_knowledge_db.py --wiki /path/to/wiki claims --page concepts/upgrade-readiness.md
+python scripts/query_knowledge_db.py --wiki /path/to/wiki sql "SELECT data_type, COUNT(*) FROM data_points GROUP BY data_type"
+```
+
+The `sql` subcommand is read-only by design. Use it for analysis and audit queries; use the batch/refresh script to rebuild the DB after wiki changes.
+
 ## The Ingest Ledger
 
 `_meta/ingest-ledger.csv` — append-only, one row per case ever ingested. This file replaces per-case trace pages entirely.

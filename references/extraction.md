@@ -31,7 +31,9 @@ Rules:
 
 ## Depth of Extraction
 
-From every non-subsumed case, capture ALL reusable detail. Reusable means it would help on a *similar future case* — which includes, and sanitization aside is not limited to:
+From every non-subsumed case, capture ALL reusable detail, then synthesize it into article-style topic knowledge. Pages must read like legitimate wiki articles about the topic — concepts, mechanisms, operating rules, diagnosis, procedures, variants, and boundaries — not like pasted or truncated case excerpts. Source snippets are only intermediate evidence: summarize and abstract the meat of what was discussed into reusable claims, while preserving exact error strings/commands only when they are themselves reusable search or execution artifacts.
+
+Reusable means it would help on a *similar future case* — which includes, and sanitization aside is not limited to:
 
 - **Verbatim error signatures** — exact error messages, codes, log lines, stack-trace heads. These are reusable knowledge (a worker greps for them), not case detail. Strip customer identifiers, keep the technical text.
 - **Exact products, components, versions** — "Automation Suite 2023.10 on OpenShift" teaches; "the product" doesn't.

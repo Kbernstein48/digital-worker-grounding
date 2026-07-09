@@ -120,15 +120,36 @@ case_id,source_ref,batch_id,ingested,status,case_type,topic,process_stage,root_c
 
 For corpora, follow the batch protocol in `references/batch-ingest.md`: single agent, chunked checkpoints, batch state file, saturation report.
 
-### Query — answer from the wiki
+### Deepen — fix high-level or reference-case-heavy pages
+
+Use this mode when a wiki has pages and citations but the user says it focuses too much on reference cases, summaries, or category counts. Do **not** respond by adding more case references. Reopen the source cases mapped to each page through the ledger, extract the meat of what was discussed and observed, and merge that operational detail into the appropriate existing page or a more specific split-out topic page. Remove generated distribution/summary sections from durable pages when they do not help a future worker act. Filter email headers, disclaimers, scheduling chatter, customer/person names, and low-signal closure text before writing. Follow `references/source-case-deepening.md`.
+
+### Case Takeover — operate on a live or exported business record
+
+Use this mode when the user asks the Digital Worker to help take over a case, ticket, claim, incident, CRM object, document bundle, or other source business record. Follow `references/case-takeover.md`.
+
+The worker must inspect the source of truth first when available, then query `_meta/knowledge.db`, classify the issue/object state, gather missing evidence, choose the next action, draft communication, escalate when needed, update durable wiki knowledge, refresh the DB, and verify. The deliverable is a case action packet, not a case summary. Never create a per-record page or batch section.
+
+### Query — answer from the wiki and knowledge DB
 
 1. Read `index.md` and `_meta/topic-map.md` (if present); search pages for key terms.
-2. Answer from durable pages; cite the pages used and their evidence counts.
-3. If the synthesis is durable and reusable, file it in `queries/` and add it to `index.md`; append to `log.md`.
+2. If `_meta/knowledge.db` exists, use the generic query tool for corpus-level lookup before answering record/evidence questions:
+   ```bash
+   python <skill-dir>/scripts/query_knowledge_db.py --wiki "$WIKI" search "<term>" --limit 20
+   python <skill-dir>/scripts/query_knowledge_db.py --wiki "$WIKI" data-points --term "<term>" --limit 20
+   python <skill-dir>/scripts/query_knowledge_db.py --wiki "$WIKI" claims --page "<page-or-topic>" --limit 20
+   ```
+   See `references/query-tool.md` for commands. The tool is generic over business objects: support cases, tickets, claims, orders, emails, CRM records, documents, or any other indexed source record.
+3. Answer from durable pages first, then use DB rows to identify supporting records, data points, gaps, or candidate claims. Cite pages and evidence counts; do not paste raw source-derived text into the answer unless it is sanitized reusable signal.
+4. If the synthesis is durable and reusable, file it in `queries/` and add it to `index.md`; append to `log.md`.
 
 ### Lint — health and signal-to-noise audit
 
 Run the checks in `references/lint.md`: link/frontmatter/index integrity, the noise detectors (per-case pages, batch-named pages, per-ingest sections, case summaries in pages, structural drift), the shallowness detectors (taxonomy-restatement claims, thin pages under heavy evidence, undocumented substantial topics, worker-test failures), and the saturation audit. Report by severity; append results to `log.md`.
+
+### Improve — quality pass over an existing wiki
+
+When the user asks to improve wiki quality, do not stop at a report. Refresh `_meta/knowledge.db`, run the audit/lint/topic tools, inspect the weakest pages, promote reusable data points into article claims, remove snippet/case-summary/noise, update affected pages in place, refresh the DB again, and rerun verification before reporting. Follow `references/quality-improvement.md`. Keep the final report concise: changed pages, promoted claims/data points, removed noise, DB counts, verification results, and remaining advisory warnings.
 
 ## Completion Criteria (any ingest)
 
@@ -153,4 +174,8 @@ Load these when performing the corresponding work — they are the authoritative
 | `references/process-model.md` | creating or updating business process pages |
 | `references/templates.md` | writing SCHEMA.md, the Role OS, or creating any new page |
 | `references/lint.md` | auditing wiki health, noise, or shallow extraction |
+| `references/query-tool.md` | using `_meta/knowledge.db` to query source records, pages, claims, claim-case links, or extracted reusable data points |
+| `references/case-takeover.md` | taking over a live/exported business record; producing an action packet; source inspection + DB lookup + communication/escalation workflow |
+| `references/quality-improvement.md` | improving an existing wiki with the DB/tool chain; promoting data points into claims; interpreting audit/lint findings |
+| `references/source-case-deepening.md` | when pages are too high-level, reference-case-focused, taxonomy/distribution-heavy, or need source cases reopened to extract operational detail |
 | `references/parallel-ingest.md` | corpus is too large for single-agent chunked ingest and you accept the added coordination discipline — Hard Rule 9's single-agent default still applies otherwise |

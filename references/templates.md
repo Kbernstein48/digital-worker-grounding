@@ -21,6 +21,7 @@ Cases are cited, never copied: per-case detail lives in `_meta/ingest-ledger.csv
 - Pages use `[[wikilinks]]`; new pages are added to `index.md` in the same edit.
 - Every ingest/query/lint action is appended to `log.md` as
   `## [YYYY-MM-DD] <mode> | <scope>` followed by one-line outcome bullets.
+- `_meta/knowledge.db` is refreshed after batch checkpoints and major rewrites. It indexes cases, pages, cited claims, claim→case links, and sanitized reusable data points for audit/search; it never stores raw source narratives.
 - Pages stay under ~200 lines; split by topic when they grow past that.
 
 ## Taxonomy
