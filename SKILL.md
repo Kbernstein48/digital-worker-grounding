@@ -1,7 +1,7 @@
 ---
 name: digital-worker-grounding
-description: "Distill business records and documents into a deep, detailed knowledge wiki — topics, business process, Role OS, automation candidates, governance, evaluations — that grounds a Digital Worker. Extracts rich reusable knowledge with case-ID citations; never turns cases into pages."
-version: 2.2.0
+description: "Distill business records and documents into a deep, detailed knowledge wiki — topics, business process, Role OS, automation candidates, governance, evaluations — that grounds a Digital Worker. Extracts rich reusable knowledge with case-ID citations; never turns cases into pages. Equip mode mines the trained wiki into an evidence-backed tool manifest and commissions builds via platform builder skills."
+version: 2.3.0
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -151,6 +151,16 @@ Run the checks in `references/lint.md`: link/frontmatter/index integrity, the no
 
 When the user asks to improve wiki quality, do not stop at a report. Refresh `_meta/knowledge.db`, run the audit/lint/topic tools, inspect the weakest pages, promote reusable data points into article claims, remove snippet/case-summary/noise, update affected pages in place, refresh the DB again, and rerun verification before reporting. Follow `references/quality-improvement.md`. Keep the final report concise: changed pages, promoted claims/data points, removed noise, DB counts, verification results, and remaining advisory warnings.
 
+### Equip — recommend and commission tooling
+
+Use this mode after ingest completes (ideally after a clean lint) when the user asks what tools the worker needs, wants a tool manifest generated, or wants builds handed to platform builder skills. Follow `references/equip-mode.md`.
+
+1. **Gap analysis** — mine `_meta/knowledge.db` (topics × systems × signatures × command/config data points × procedure claims) and classify each capability cluster: *knowledge-only* (the trained worker already covers it), *tool-required*, or *human-only* (authority boundary → escalation surface, not a tool).
+2. **Manifest** — write `_meta/tool-manifest.yaml`. Every entry is evidence-cited (case count, exemplars, concept pages) and carries an IO contract, an authority tier from the Role OS, and an **execution locus** derived from the deployment mix of its citing cases. A tool with no citing cases is never proposed.
+3. **Approval gate** — the manifest is a proposal governed by the Role OS Self-Extension Policy. Stop and obtain human approval before any build starts; never self-execute.
+4. **Builder handoffs** — for approved entries, emit standalone build briefs (goal, contract, evidence, acceptance fixtures replayed from source cases) and hand off to the appropriate builder skill; for multi-tool manifests, author a PDD and route through the planner skill instead of driving specialists one-by-one.
+5. **Registration** — a built tool is not done until the wiki knows about it: an `automation/tools/<tool-id>.md` page with provenance, an updated Role OS authority matrix, and shadow-mode evaluation before autonomous use.
+
 ## Completion Criteria (any ingest)
 
 - Every input case has a ledger row (`ok`, `skipped`, or `error`) with classification and gist.
@@ -179,3 +189,4 @@ Load these when performing the corresponding work — they are the authoritative
 | `references/quality-improvement.md` | improving an existing wiki with the DB/tool chain; promoting data points into claims; interpreting audit/lint findings |
 | `references/source-case-deepening.md` | when pages are too high-level, reference-case-focused, taxonomy/distribution-heavy, or need source cases reopened to extract operational detail |
 | `references/parallel-ingest.md` | corpus is too large for single-agent chunked ingest and you accept the added coordination discipline — Hard Rule 9's single-agent default still applies otherwise |
+| `references/equip-mode.md` | generating a tool manifest from a trained wiki; classifying capability gaps; writing build briefs; handing builds to platform builder skills; registering built tools |

@@ -1,8 +1,9 @@
-# Equip Mode — From Trained Wiki to Built Tooling (design proposal)
+# Equip Mode — From Trained Wiki to Built Tooling
 
-> **Status: DRAFT.** Not yet wired into SKILL.md. This documents the design for a new
-> operating mode that closes the gap between *knowing the work* (Ingest/Deepen) and
-> *doing the work* (built, deployed tools on the UiPath platform).
+Authoritative reference for the **Equip** operating mode in `SKILL.md`. Equip closes
+the gap between *knowing the work* (Ingest/Deepen) and *doing the work* (built,
+deployed tools on the UiPath platform). Load this file whenever generating a tool
+manifest, writing build briefs, or handing builds to builder skills.
 
 ## The idea
 
@@ -60,6 +61,7 @@ provenance discipline as wiki claims. Ranking = case frequency × feasibility.
   purpose: Test outbound connectivity from a robot machine to Orchestrator
     (ports, proxy, TLS chain) and return a structured verdict.
   tool_type: coded-workflow          # → uipath-rpa (.cs) or uipath-functions
+  execution_locus: in-network        # see "Execution locus" below
   evidence:
     case_count: 25
     exemplars: [02896887, 02818325, 02841666]
@@ -72,9 +74,27 @@ provenance discipline as wiki claims. Ranking = case frequency × feasibility.
 - tool_id: salesforce-case-updater
   purpose: Post the drafted customer communication and status update back to the case.
   tool_type: is-connector-call       # → uipath-platform (Salesforce connection exists)
+  execution_locus: platform-api
   authority: approval-gated          # outward-facing → HITL
   ...
 ```
+
+#### Execution locus (mandatory per entry)
+
+Derive from the deployment mix of the entry's citing cases — never assume the tool's
+target is reachable from where the tool runs. A probe pointed at a private FQDN from
+outside the network reports the very failure it is meant to diagnose.
+
+| Locus | When | Shape of the tool |
+|---|---|---|
+| `in-network` | The worker's robots run inside the network that owns the target (internal digital worker over the org's own systems) | Unattended workflow/job; direct checks are valid |
+| `remote-assisted` | The worker has no foothold in the target environment (e.g. a support worker diagnosing customer systems) | Two halves: a **generator** that emits a parameterized, read-only diagnostic script for the environment owner to run, plus a **parser** that ingests the returned output and runs signature matching |
+| `platform-api` | The target is a SaaS/platform API reachable with an existing connection | IS connector call or API workflow |
+| `public` | The target is genuinely public (public DNS, cloud endpoints) — verify this from the case deployment fields | Direct probe, but it must refuse or downgrade to `remote-assisted` when the target does not resolve publicly |
+
+If the citing cases mix deployment contexts (e.g. 65% on-premises, 35% cloud), the
+manifest entry either splits into locus-specific variants or specifies the
+`remote-assisted` shape as the common denominator.
 
 ### 3. Approval gate
 
@@ -117,9 +137,10 @@ a task backlog (`TaskCreate`) mirroring the manifest so progress is visible eith
 
 A built tool is not done until the wiki knows about it:
 
-- **`tools/<tool-id>.md`** wiki page: what it does, contract, when to use it, evidence
-  links to the cases it serves. Query mode can then answer "how do I fix X" with
-  "run tool Y" instead of prose.
+- **`automation/tools/<tool-id>.md`** wiki page: what it does, contract, when to use it,
+  evidence links to the cases it serves. Query mode can then answer "how do I fix X"
+  with "run tool Y" instead of prose. (Lives under `automation/` — these pages are the
+  built counterpart of that section's compile-down candidates.)
 - **Role OS authority matrix** updated: which tools run autonomously vs. approval-gated.
 - **Eval before trust**: the acceptance fixtures become the tool's eval set (runnable
   via `uipath-agents` / Maestro eval tooling). A tool enters *shadow mode* (proposes,
@@ -146,6 +167,12 @@ executing steps by hand.
 
 - **Evidence in, evidence out.** A tool with no citing cases doesn't get proposed. Same
   hard-rule discipline as the wiki: signal over volume.
+- **Guard signature quality.** Before matching or citing signatures, drop entries under
+  a minimum specificity threshold (e.g. bare "error"/"errors" normalizations). If the
+  signatures table is noisy, flag it as an upstream lint finding rather than building
+  matchers on top of noise.
+- **Never assume reachability.** Every entry carries an `execution_locus` derived from
+  its citing cases' deployment contexts (see above).
 - **Propose, never self-execute.** The manifest is governed by the Self-Extension
   Policy; the approval gate is not optional.
 - **Briefs stand alone.** A builder skill (or a fresh session running it) must be able
